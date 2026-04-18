@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, ExternalLink, Settings, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, Save, Plus, ExternalLink, Settings, Loader2, Check, X } from 'lucide-react';
 import api from '../utils/axios';
 import QuestionEditor from '../components/builder/QuestionEditor';
 
