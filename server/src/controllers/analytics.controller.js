@@ -42,8 +42,8 @@ exports.getSurveyOverview = async (req, res, next) => {
 
         if (aggResult.length > 0) {
             const data = aggResult[0];
-            overview.avgCompletionTimeSeconds = Math.round(data.avgCompletionTime || 0);
-            overview.deviceBreakdown = {
+            overview.averageCompletionTime = Math.round(data.avgCompletionTime || 0) * 1000; // Convert to ms for frontend
+            overview.devices = {
                 desktop: data.desktop,
                 mobile: data.mobile,
                 tablet: data.tablet,
