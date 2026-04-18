@@ -8,7 +8,10 @@ import {
   Loader2,
   RefreshCw,
   Share2,
-  BarChart as BarChartIcon
+  BarChart as BarChartIcon,
+  X,
+  ChevronRight,
+  MessageSquare
 } from 'lucide-react';
 import {
   BarChart,
@@ -65,6 +68,10 @@ const SurveyAnalytics = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
+  const [questionResponses, setQuestionResponses] = useState([]);
+  const [isModalLoading, setIsModalLoading] = useState(false);
+  const [modalPagination, setModalPagination] = useState({ page: 1, total: 0, pages: 1 });
 
   const fetchAnalytics = async () => {
     try {
@@ -78,6 +85,32 @@ const SurveyAnalytics = () => {
     } finally {
        setIsLoading(false);
     }
+  };
+
+  const fetchQuestionResponses = async (questionId, page = 1) => {
+    try {
+      setIsModalLoading(true);
+      const res = await api.get(`/analytics/survey/${id}/question/${questionId}?page=${page}&limit=20`);
+      if (res.data.success) {
+        setQuestionResponses(page === 1 ? res.data.data.answers : [...questionResponses, ...res.data.data.answers]);
+        setModalPagination(res.data.data.metadata);
+      }
+    } catch (err) {
+      console.error('Failed to fetch question responses', err);
+    } finally {
+      setIsModalLoading(false);
+    }
+  };
+
+  const openQuestionModal = (question) => {
+    setSelectedQuestion(question);
+    setQuestionResponses([]);
+    fetchQuestionResponses(question.questionId, 1);
+  };
+
+  const closeQuestionModal = () => {
+    setSelectedQuestion(null);
+    setQuestionResponses([]);
   };
 
   const handleExportCSV = async () => {
@@ -307,11 +340,21 @@ const SurveyAnalytics = () => {
                 
                 {isText ? (
                    <div className="space-y-4 h-56 overflow-y-auto pr-2 custom-scrollbar border-t border-slate-100 dark:border-slate-800 pt-6">
-                      {textSamples.length > 0 ? textSamples.map((text, i) => (
-                         <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
-                           <span className="text-primary mr-1 opacity-50">"</span>{text}<span className="text-primary ml-1 opacity-50">"</span>
-                         </div>
-                      )) : (
+                      {textSamples.length > 0 ? (
+                        <>
+                          {textSamples.map((text, i) => (
+                             <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
+                               <span className="text-primary mr-1 opacity-50">"</span>{text}<span className="text-primary ml-1 opacity-50">"</span>
+                             </div>
+                          ))}
+                          <button 
+                            onClick={() => openQuestionModal(qData)}
+                            className="w-full py-3 mt-2 text-primary font-bold text-xs uppercase tracking-widest hover:bg-primary/5 rounded-xl transition-colors flex items-center justify-center gap-2 border border-dashed border-primary/20"
+                          >
+                             View All {qData.analytics?.totalAnswered} Submissions <ChevronRight size={14} />
+                          </button>
+                        </>
+                      ) : (
                          <div className="h-full flex items-center justify-center text-slate-400 text-sm font-bold uppercase tracking-widest text-center">No textual insights captured yet.</div>
                       )}
                    </div>
@@ -348,6 +391,70 @@ const SurveyAnalytics = () => {
            );
         })}
       </div>
+
+      {/* Response Detail Modal */}
+      {selectedQuestion && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={closeQuestionModal}></div>
+           
+           <div className="glass-card bg-white dark:bg-slate-900 w-full max-w-2xl max-h-[85vh] rounded-3xl subtle-shadow relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
+              {/* Modal Header */}
+              <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex justify-between items-start">
+                 <div>
+                   <div className="flex items-center gap-3 mb-2">
+                     <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-lg">Question Insight</span>
+                     <span className="text-slate-400 dark:text-slate-500 font-bold text-xs uppercase tracking-widest">{selectedQuestion.analytics?.totalAnswered} Total Responses</span>
+                   </div>
+                   <h2 className="text-xl md:text-2xl font-heading font-black text-slate-900 dark:text-white leading-tight pr-8 italic">{selectedQuestion.questionText}</h2>
+                 </div>
+                 <button 
+                   onClick={closeQuestionModal}
+                   className="p-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl text-slate-400 hover:text-slate-600 transition-all border border-slate-200 dark:border-slate-700 subtle-shadow mt-1"
+                 >
+                   <X size={20} />
+                 </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-4 custom-scrollbar">
+                 {questionResponses.map((ans, idx) => (
+                    <div key={ans._id} className="p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-primary/20 transition-colors group">
+                       <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 text-xs font-black">#{modalPagination.total - (modalPagination.page - 1) * modalPagination.limit - idx}</div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(ans.createdAt).toLocaleString()}</span>
+                          </div>
+                          <MessageSquare size={14} className="text-slate-300 group-hover:text-primary/40 transition-colors" />
+                       </div>
+                       <p className="text-slate-700 dark:text-slate-200 font-medium leading-relaxed whitespace-pre-wrap">{ans.value}</p>
+                    </div>
+                 ))}
+
+                 {isModalLoading && (
+                    <div className="flex justify-center p-8">
+                       <Loader2 className="animate-spin text-primary" size={32} />
+                    </div>
+                 )}
+
+                 {!isModalLoading && modalPagination.page < modalPagination.pages && (
+                    <button 
+                      onClick={() => fetchQuestionResponses(selectedQuestion.questionId, modalPagination.page + 1)}
+                      className="w-full py-4 text-slate-500 font-bold text-sm uppercase tracking-widest hover:text-primary hover:bg-primary/5 rounded-2xl transition-all border-2 border-dashed border-slate-200 dark:border-slate-800 mt-4"
+                    >
+                      Load More Responses
+                    </button>
+                 )}
+
+                 {questionResponses.length === 0 && !isModalLoading && (
+                    <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-center">
+                       <MessageSquare size={48} className="mb-4 opacity-10" />
+                       <p className="font-bold uppercase tracking-widest text-sm">No recorded data for this query</p>
+                    </div>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
 
     </div>
   );

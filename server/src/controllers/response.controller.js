@@ -80,11 +80,11 @@ exports.submitResponse = async (req, res, next) => {
           if (isNaN(val) || val < question.ratingScale.min || val > question.ratingScale.max) {
              validationErrors.push({ field: question._id, message: 'Invalid rating value' });
           }
-       } else if (question.type === 'short_text') {
-          if (typeof submittedAnswer.value !== 'string' || submittedAnswer.value.length > 5000) {
-             validationErrors.push({ field: question._id, message: 'Invalid text value' });
-          }
-       } else if (['multiple_choice', 'yes_no', 'checkbox', 'single_choice'].includes(question.type)) {
+        } else if (['text', 'textarea', 'short_text', 'long_text'].includes(question.type)) {
+           if (typeof submittedAnswer.value !== 'string' || (submittedAnswer.value && submittedAnswer.value.length > 5000)) {
+              validationErrors.push({ field: question._id, message: 'Invalid text value' });
+           }
+        } else if (['multiple_choice', 'yes_no', 'checkbox', 'single_choice'].includes(question.type)) {
           if (!submittedAnswer.selectedOptions || !Array.isArray(submittedAnswer.selectedOptions)) {
              validationErrors.push({ field: question._id, message: 'Invalid choices format' });
           } else {

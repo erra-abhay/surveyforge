@@ -196,7 +196,7 @@ exports.getSurveyOverview = async (req, res, next) => {
                     satisfactionScore: 0
                 };
             }
-        } else if (question.type === 'short_text') {
+        } else if (['text', 'textarea', 'short_text', 'long_text'].includes(question.type)) {
              const textAgg = await Response.aggregate([
                 ...pipeline,
                 { $match: { "answers.skipped": false } },
@@ -239,9 +239,65 @@ exports.getSurveyOverview = async (req, res, next) => {
 };
 
 exports.getQuestionAnalytics = async (req, res, next) => {
-  // Can be a subset of the logic above or provide even more paginated raw texts for text questions.
-  // We'll return a stub pointing to overview for now, as that's complete.
-  res.json({ success: true, message: 'Question analytics included in survey overview endpoint' });
+    try {
+        const { surveyId, questionId } = req.params;
+        const { page = 1, limit = 50 } = req.query;
+
+        const survey = await Survey.findById(surveyId);
+        if (!survey) return res.status(404).json({ success: false, message: 'Survey not found' });
+        if (survey.creator.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+
+        const question = survey.questions.id(questionId) || survey.questions.find(q => q._id.toString() === questionId);
+        if (!question) return res.status(404).json({ success: false, message: 'Question not found' });
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const answers = await Response.aggregate([
+            { $match: { survey: survey._id } },
+            { $unwind: "$answers" },
+            { $match: { "answers.questionId": questionId, "answers.skipped": false } },
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: parseInt(limit) },
+            { 
+                $project: { 
+                    _id: 1, 
+                    value: "$answers.value", 
+                    createdAt: 1,
+                    respondent: 1
+                } 
+            }
+        ]);
+
+        const totalCountAgg = await Response.aggregate([
+            { $match: { survey: survey._id } },
+            { $unwind: "$answers" },
+            { $match: { "answers.questionId": questionId, "answers.skipped": false } },
+            { $count: "total" }
+        ]);
+
+        const total = totalCountAgg.length > 0 ? totalCountAgg[0].total : 0;
+
+        res.json({
+            success: true,
+            data: {
+                questionId,
+                questionText: question.text,
+                type: question.type,
+                answers,
+                metadata: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    pages: Math.ceil(total / parseInt(limit))
+                }
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
 };
 
 exports.getResponseTrends = async (req, res, next) => {

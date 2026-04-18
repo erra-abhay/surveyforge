@@ -143,8 +143,8 @@ const PublicSurvey = () => {
                   </h3>
                   
                   <div className="mt-4 pl-7 text-slate-700">
-                     {/* Text Input */}
-                     {q.type === 'text' && (
+                     {/* Text Input (Short) */}
+                     {(q.type === 'text' || q.type === 'short_text') && (
                         <input 
                           type="text"
                           required={q.required}
@@ -154,8 +154,8 @@ const PublicSurvey = () => {
                         />
                      )}
 
-                     {/* Textarea */}
-                     {q.type === 'textarea' && (
+                     {/* Textarea (Long) */}
+                     {(q.type === 'textarea' || q.type === 'long_text') && (
                         <textarea 
                           required={q.required}
                           onChange={(e) => handleTextChange(q._id, e.target.value)}
