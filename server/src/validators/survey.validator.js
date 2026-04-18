@@ -21,11 +21,11 @@ const validateSurvey = [
     .isLength({ max: 1000 }),
 
   body('questions.*.type')
-    .isIn(['multiple_choice', 'rating', 'short_text', 'yes_no', 'checkbox'])
+    .isIn(['multiple_choice', 'single_choice', 'rating', 'short_text', 'long_text', 'text', 'textarea', 'yes_no', 'checkbox'])
     .withMessage('Invalid question type'),
 
   body('questions.*.options')
-    .if(body('questions.*.type').isIn(['multiple_choice', 'yes_no', 'checkbox']))
+    .if(body('questions.*.type').isIn(['multiple_choice', 'single_choice', 'yes_no', 'checkbox']))
     .isArray({ min: 2, max: 20 })
     .withMessage('Choice questions must have 2 to 20 options'),
 

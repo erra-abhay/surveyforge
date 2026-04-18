@@ -105,7 +105,11 @@ const SurveyBuilder = () => {
         title: survey.title,
         description: survey.description,
         status: survey.status,
-        theme: survey.theme,
+        settings: {
+          ...survey.settings,
+          theme: survey.theme, // Ensure theme is moved into settings
+          thankYouMessage: survey.settings?.thankYouMessage
+        },
         questions: survey.questions.map(q => {
           const { tempId, ...rest } = q;
           return rest;
@@ -118,8 +122,16 @@ const SurveyBuilder = () => {
       }
     } catch (err) {
       console.error('Failed to save', err);
-      const message = err.response?.data?.message || 'Failed to save changes. Please check for validation errors.';
-      setError(message);
+      // Detailed error log
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.errors) {
+        // Handle Mongoose validation errors format if returned differently
+        const msg = Object.values(err.response.data.errors).join(', ');
+        setError(msg);
+      } else {
+        setError('Failed to save changes. Please ensure all required fields are filled.');
+      }
     } finally {
       setIsSaving(false);
     }
