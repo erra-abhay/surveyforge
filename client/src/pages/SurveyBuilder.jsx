@@ -15,6 +15,8 @@ const SurveyBuilder = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
+    setSurvey(null);
+    setError(null);
     fetchSurvey();
   }, [id]);
 
@@ -58,7 +60,7 @@ const SurveyBuilder = () => {
   const addQuestion = () => {
     const newQuestion = {
       tempId: `new_${Date.now()}`,
-      text: '',
+      text: 'Untitled Question',
       type: 'multiple_choice',
       required: false,
       options: [{ text: 'Option 1', value: 'opt_1' }, { text: 'Option 2', value: 'opt_2' }]
@@ -77,8 +79,27 @@ const SurveyBuilder = () => {
   };
 
   const saveSurvey = async () => {
+    // Basic validation
+    if (!survey.title?.trim()) {
+      setError('Survey title is required.');
+      return;
+    }
+
+    if (!survey.questions || survey.questions.length === 0) {
+      setError('A survey must have at least one question.');
+      setIsSaving(false);
+      return;
+    }
+
+    const emptyQuestions = survey.questions.filter(q => !q.text?.trim());
+    if (emptyQuestions.length > 0) {
+      setError('All questions must have text. Please check frames with empty titles.');
+      return;
+    }
+
     try {
       setIsSaving(true);
+      setError(null);
       
       const payload = {
         title: survey.title,
@@ -97,6 +118,8 @@ const SurveyBuilder = () => {
       }
     } catch (err) {
       console.error('Failed to save', err);
+      const message = err.response?.data?.message || 'Failed to save changes. Please check for validation errors.';
+      setError(message);
     } finally {
       setIsSaving(false);
     }
@@ -113,12 +136,23 @@ const SurveyBuilder = () => {
     );
   }
 
-  if (error || !survey) {
+  if (!survey) {
     return <div className="p-8 text-center text-red-500 font-bold">{error || 'Survey record not found'}</div>;
   }
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 flex flex-col font-sans">
+      {error && (
+        <div className="bg-red-500 text-white px-6 py-3 flex justify-between items-center animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">!</div>
+            <p className="text-sm font-bold uppercase tracking-widest leading-none pt-0.5">{error}</p>
+          </div>
+          <button onClick={() => setError(null)} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+      )}
       {/* Top Navbar */}
       <div className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-4">
