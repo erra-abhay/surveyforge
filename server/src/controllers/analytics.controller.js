@@ -88,7 +88,7 @@ exports.getSurveyOverview = async (req, res, next) => {
             { $match: { "answers.questionId": question._id.toString() } }
         ];
 
-        if (['multiple_choice', 'yes_no', 'checkbox'].includes(question.type)) {
+        if (['multiple_choice', 'single_choice', 'yes_no', 'checkbox'].includes(question.type)) {
             const optionAgg = await Response.aggregate([
                 ...pipeline,
                 { $unwind: { path: "$answers.selectedOptions", preserveNullAndEmptyArrays: true } },
