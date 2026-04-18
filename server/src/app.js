@@ -10,6 +10,9 @@ const errorHandler = require('./middleware/errorHandler.middleware');
 
 const app = express();
 
+// Trust proxy for Nginx/Docker environments
+app.set('trust proxy', 1);
+
 // ─── Security Middleware ───────────────────────────────────────────────────
 app.use(
   helmet({

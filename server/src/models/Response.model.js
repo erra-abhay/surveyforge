@@ -11,7 +11,7 @@ const answerSchema = new mongoose.Schema({
   },
   questionType: {
     type: String,
-    enum: ['multiple_choice', 'rating', 'short_text', 'yes_no', 'checkbox'],
+    enum: ['multiple_choice', 'single_choice', 'rating', 'short_text', 'long_text', 'text', 'textarea', 'yes_no', 'checkbox'],
   },
   value: {
     type: mongoose.Schema.Types.Mixed, // String for text, Number for rating, Array for checkbox
